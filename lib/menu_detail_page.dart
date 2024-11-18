@@ -188,9 +188,24 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                 // Add the item to the cart provider
                 Provider.of<CartProvider>(context, listen: false).addToCart(cartItem);
 
-                // Optionally, show a snackbar message
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${widget.menuItem.name} added to cart!')),
+                  SnackBar(
+                    content: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text('${widget.menuItem.name} added to cart!'),
+                      ],
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: Colors.black.withOpacity(0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    margin: EdgeInsets.symmetric(horizontal: size.width * 0.1, vertical: size.height * 0.4),
+                    duration: Duration(seconds: 2),
+                  ),
                 );
 
                 // Go back to the previous screen

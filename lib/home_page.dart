@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
+import 'insert_menu_page.dart';
 import 'cart_page.dart';
 import 'account_page.dart';
+import 'database_helper.dart';
 import 'menu_data.dart';
 import 'menu_detail_page.dart';
 
@@ -10,24 +13,129 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   TextEditingController _searchController = TextEditingController();
-  List<MenuItem> filteredMenuItems = menuItems; // Initial list of menu items
+  List<MenuItem> allMenuItems = [];
+  List<MenuItem> filteredMenuItems = [];
+  bool isLoading = true;
+  double? distanceToCampus; // Variabel untuk menyimpan jarak
 
   @override
   void initState() {
     super.initState();
-
-    // Listen for changes in the search field
+    WidgetsBinding.instance.addObserver(this); // Add lifecycle observer
     _searchController.addListener(() {
       filterMenuItems();
     });
+    loadMenuItems(); // Load data when the page initializes
+    getDistanceToCampus(); // Hitung jarak ke Universitas Tarumanagara
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Remove observer
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Reload data when the app returns to focus
+      loadMenuItems();
+      getDistanceToCampus();
+    }
+  }
+
+  Future<void> navigateToInsertMenuPage() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => InsertMenuPage()),
+    );
+
+    // If the result is true, refresh the data
+    if (result == true) {
+      loadMenuItems();
+    }
+  }
+
+  Future<void> loadMenuItems() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // Ambil data menu dari database
+      final menuList = await DatabaseHelper.instance.getMenuItems();
+
+      // Konversi hasil query menjadi objek MenuItem
+      final items = menuList.map((map) => MenuItem.fromMap(map)).toList();
+
+      setState(() {
+        allMenuItems = items;
+        filteredMenuItems = items; // Awalnya tampilkan semua item
+        isLoading = false;
+      });
+
+      print('Items loaded: ${items.length}');
+    } catch (e) {
+      print('Error loading menu items: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+
+  Future<void> getDistanceToCampus() async {
+    try {
+      // Meminta izin lokasi
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        setState(() {
+          distanceToCampus = null; // Tidak bisa menghitung jarak
+        });
+        return;
+      }
+
+      // Dapatkan lokasi pengguna
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+
+      // Koordinat Universitas Tarumanagara (Kampus 1)
+      const untarLatitude = -6.200918;
+      const untarLongitude = 106.783268;
+
+      // Hitung jarak
+      double distanceInMeters = Geolocator.distanceBetween(
+        position.latitude,
+        position.longitude,
+        untarLatitude,
+        untarLongitude,
+      );
+
+      // Konversi ke kilometer
+      setState(() {
+        distanceToCampus = distanceInMeters / 1000; // dalam kilometer
+      });
+    } catch (e) {
+      print('Error getting location: $e');
+      setState(() {
+        distanceToCampus = null;
+      });
+    }
+  }
+
 
   void filterMenuItems() {
     String query = _searchController.text.toLowerCase();
     setState(() {
-      filteredMenuItems = menuItems.where((item) {
+      filteredMenuItems = allMenuItems.where((item) {
         return item.name.toLowerCase().contains(query);
       }).toList();
     });
@@ -50,15 +158,6 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Color(0xFFAF251C),
         actions: [
           IconButton(
-            icon: Icon(Icons.shopping_cart, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CartPage()),
-              );
-            },
-          ),
-          IconButton(
             icon: Icon(Icons.person, color: Colors.white),
             onPressed: () {
               Navigator.push(
@@ -69,9 +168,10 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Column(
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Column(
         children: [
-          // Search Bar Section
           Padding(
             padding: EdgeInsets.only(
               top: size.height * 0.03,
@@ -82,19 +182,56 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               children: [
                 Align(
-                  alignment: Alignment.centerLeft, // Align to the left
+                  alignment: Alignment.centerLeft,
                   child: Text(
                     'Hello, Untarian!',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFFAF251C),
                     ),
                   ),
                 ),
-                SizedBox(height: size.height * 0.008),
+                SizedBox(height: size.height * 0.03),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xFFAF251C), // Warna merah sesuai tema
+                      borderRadius: BorderRadius.circular(24.0),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      vertical: 8.0,
+                      horizontal: 12.0,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min, // Membuat lebar mengikuti konten
+                      children: [
+                        Icon(
+                          Icons.location_on, // Ikon lokasi
+                          color: Colors.white, // Warna ikon putih
+                          size: 16.0,
+                        ),
+                        SizedBox(width: 8.0), // Spasi antara ikon dan teks
+                        Text(
+                          distanceToCampus == null
+                              ? 'Calculating distance...'
+                              : 'Distance to UNTAR : ${distanceToCampus!.toStringAsFixed(2)} km',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+
+                SizedBox(height: size.height * 0.01),
                 TextField(
-                  controller: _searchController, // Attach the controller
+                  controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Search...',
                     focusedBorder: OutlineInputBorder(
@@ -121,21 +258,22 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-
-          // Menu Items Section
           Flexible(
-            child: GridView.builder(
+            child: filteredMenuItems.isEmpty
+                ? Center(child: Text('No menu items available.'))
+                : GridView.builder(
               padding: EdgeInsets.symmetric(
                 vertical: size.height * 0.01,
                 horizontal: size.width * 0.06,
               ),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // Number of columns
-                childAspectRatio: 0.8, // Adjust this value to fit the aspect ratio
-                crossAxisSpacing: size.width * 0.03, // Space between cards
-                mainAxisSpacing: size.width * 0.03, // Space between rows
+              gridDelegate:
+              SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.8,
+                crossAxisSpacing: size.width * 0.03,
+                mainAxisSpacing: size.width * 0.03,
               ),
-              itemCount: filteredMenuItems.length, // Use filtered list
+              itemCount: filteredMenuItems.length,
               itemBuilder: (context, index) {
                 final item = filteredMenuItems[index];
                 return MenuCard(menuItem: item);
@@ -144,13 +282,17 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Color(0xFFAF251C),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => CartPage()),
+          );
+        },
+        child: Icon(Icons.shopping_cart, color: Colors.white),
+      ),
     );
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose(); // Dispose the controller when not needed
-    super.dispose();
   }
 }
 
@@ -180,14 +322,18 @@ class MenuCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Fixed height for the image with stretching
             Container(
-              height: size.height * 0.12, // Set the desired height for the image
+              height: size.height * 0.12,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                borderRadius:
+                BorderRadius.vertical(top: Radius.circular(10)),
                 image: DecorationImage(
-                  image: AssetImage(menuItem.imageUrl),
-                  fit: BoxFit.cover, // Fill the space without maintaining aspect ratio
+                  image: AssetImage(
+                    menuItem.imageUrl.isNotEmpty
+                        ? menuItem.imageUrl
+                        : 'assets/default_image.jpg',
+                  ),
+                  fit: BoxFit.cover,
                 ),
               ),
             ),
@@ -196,7 +342,6 @@ class MenuCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
                   Text(
                     menuItem.name,
                     style: GoogleFonts.questrial(
@@ -207,20 +352,18 @@ class MenuCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: size.height * 0.001),
-                  // Description with max 2 lines
                   Text(
                     menuItem.description,
                     style: GoogleFonts.questrial(
-                      fontSize: size.width * 0.02,
+                      fontSize: size.width * 0.025,
                     ),
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis, // Show "..." if overflowed
+                    overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: size.height * 0.02),
-                  // Price and Rating Section
                   Row(
                     children: [
-                      Expanded( // Use Expanded to ensure the text fits
+                      Expanded(
                         child: Text(
                           'Rp ${menuItem.price.toStringAsFixed(0)}',
                           style: GoogleFonts.questrial(
@@ -230,7 +373,7 @@ class MenuCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      SizedBox(width: size.width * 0.01), // Space between price and rating
+                      SizedBox(width: size.width * 0.01),
                       Text(
                         '${menuItem.rating.toString()} ★',
                         style: GoogleFonts.questrial(
