@@ -9,7 +9,6 @@ class ViewAdminAccountPage extends StatefulWidget {
 
 class _ViewAdminAccountPageState extends State<ViewAdminAccountPage> {
   List<Map<String, dynamic>> adminAccounts = [];
-  Map<String, dynamic>? currentAdmin; // Currently logged-in admin
   bool isLoading = true;
 
   @override
@@ -23,12 +22,8 @@ class _ViewAdminAccountPageState extends State<ViewAdminAccountPage> {
       // Load all admin accounts from the database
       final admins = await DatabaseHelper.instance.getAdmins();
 
-      // Load currently logged-in admin (if stored in shared preferences or otherwise)
-      // For this example, consider the first admin as the logged-in admin
-      // Replace this with actual logic for logged-in admin retrieval
       setState(() {
         adminAccounts = admins;
-        currentAdmin = admins.isNotEmpty ? admins.first : null; // Example logic
         isLoading = false;
       });
     } catch (e) {
@@ -44,9 +39,6 @@ class _ViewAdminAccountPageState extends State<ViewAdminAccountPage> {
       await DatabaseHelper.instance.deleteAdmin(id);
       setState(() {
         adminAccounts.removeWhere((admin) => admin['id'] == id);
-        if (currentAdmin != null && currentAdmin!['id'] == id) {
-          currentAdmin = null;
-        }
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Admin account deleted successfully')),
@@ -82,29 +74,6 @@ class _ViewAdminAccountPageState extends State<ViewAdminAccountPage> {
           ? Center(child: CircularProgressIndicator())
           : Column(
         children: [
-          // Currently logged-in admin
-          Padding(
-            padding: EdgeInsets.symmetric(
-              vertical: size.height * 0.02,
-              horizontal: size.width * 0.05,
-            ),
-            child: currentAdmin != null
-                ? Text(
-              'Currently logged in: ${currentAdmin!['name']} (${currentAdmin!['email']})',
-              style: GoogleFonts.questrial(
-                fontSize: size.width * 0.04,
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-                : Text(
-              'No admin is currently logged in.',
-              style: GoogleFonts.questrial(
-                fontSize: size.width * 0.04,
-                color: Colors.black54,
-              ),
-            ),
-          ),
           // List of admin accounts
           Expanded(
             child: adminAccounts.isEmpty

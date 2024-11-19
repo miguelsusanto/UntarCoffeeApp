@@ -74,6 +74,7 @@ flutter:
     - assets/raspberry.jpg
     - assets/susuboba.jpg
     - assets/profilepicture.jpg
+    - assets/default_image.jpg
     - assets/mocha.jpg
     - assets/lemon.jpg
     - assets/avocado.jpg
