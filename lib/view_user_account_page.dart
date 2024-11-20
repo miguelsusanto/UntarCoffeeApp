@@ -33,23 +33,6 @@ class _ViewUserAccountPageState extends State<ViewUserAccountPage> {
     }
   }
 
-  Future<void> deleteUserAccount(int id) async {
-    try {
-      await DatabaseHelper.instance.deleteUser(id);
-      setState(() {
-        userAccounts.removeWhere((user) => user['id'] == id);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('User account deleted successfully')),
-      );
-    } catch (e) {
-      print('Error deleting user account: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete user account')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -124,14 +107,6 @@ class _ViewUserAccountPageState extends State<ViewUserAccountPage> {
                               ),
                             ],
                           ),
-                        ),
-                        // Delete button
-                        IconButton(
-                          icon: Icon(Icons.delete,
-                              color: Color(0xFFAF251C)),
-                          onPressed: () {
-                            deleteUserAccount(user['id']);
-                          },
                         ),
                       ],
                     ),

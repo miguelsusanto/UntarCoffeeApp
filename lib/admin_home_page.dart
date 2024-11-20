@@ -6,6 +6,7 @@ import 'view_menu_database_page.dart'; // Halaman untuk melihat database menu
 import 'view_admin_account_page.dart'; // Halaman untuk melihat akun admin
 import 'splash_screen.dart'; // Halaman splash screen
 import 'view_user_account_page.dart';
+import 'shared_prefs_helper_admin.dart';
 
 class AdminHomePage extends StatefulWidget {
   @override
@@ -13,6 +14,24 @@ class AdminHomePage extends StatefulWidget {
 }
 
 class _AdminHomePageState extends State<AdminHomePage> {
+  final SharedPrefsHelperAdmin _prefsHelper = SharedPrefsHelperAdmin();
+
+  Future<void> _logout() async {
+    await _prefsHelper.clearAdminLoginData();
+
+    if (mounted) {
+      _navigateToSplashScreen();
+    }
+  }
+
+  void _navigateToSplashScreen() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => SplashScreen()),
+          (route) => false,
+    );
+  }
+
   Future<void> navigateToInsertMenuPage() async {
     final result = await Navigator.push(
       context,

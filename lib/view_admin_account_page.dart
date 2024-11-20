@@ -34,23 +34,6 @@ class _ViewAdminAccountPageState extends State<ViewAdminAccountPage> {
     }
   }
 
-  Future<void> deleteAdminAccount(int id) async {
-    try {
-      await DatabaseHelper.instance.deleteAdmin(id);
-      setState(() {
-        adminAccounts.removeWhere((admin) => admin['id'] == id);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Admin account deleted successfully')),
-      );
-    } catch (e) {
-      print('Error deleting admin account: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete admin account')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -123,14 +106,6 @@ class _ViewAdminAccountPageState extends State<ViewAdminAccountPage> {
                               ),
                             ],
                           ),
-                        ),
-                        // Delete button
-                        IconButton(
-                          icon: Icon(Icons.delete,
-                              color: Color(0xFFAF251C)),
-                          onPressed: () {
-                            deleteAdminAccount(admin['id']);
-                          },
                         ),
                       ],
                     ),
