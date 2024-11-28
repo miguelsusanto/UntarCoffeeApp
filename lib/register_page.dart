@@ -31,7 +31,7 @@ class _RegisterPageState extends State<RegisterPage> {
             SnackBar(content: Text("Email already registered. Use a different email.")),
           );
         } else {
-          // Simpan data user ke database
+          // Simpan data user ke database tanpa menyertakan role karena default 'user'
           await DatabaseHelper.instance.insertUser({
             'name': name,
             'email': email,

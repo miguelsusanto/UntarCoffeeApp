@@ -43,24 +43,15 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabel user
+    // Tabel user (modifikasi untuk menambah kolom 'role')
     await db.execute('''
       CREATE TABLE user (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
         phone TEXT,
-        password TEXT NOT NULL
-      )
-    ''');
-
-    // Tabel admin
-    await db.execute('''
-      CREATE TABLE admin (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
+        password TEXT NOT NULL,
+        role TEXT DEFAULT 'user'  -- Kolom role yang baru
       )
     ''');
   }
@@ -68,25 +59,9 @@ class DatabaseHelper {
   // Mengupgrade database saat versi meningkat
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Tambahkan tabel user jika belum ada
+      // Modifikasi tabel user untuk menambah kolom role
       await db.execute('''
-        CREATE TABLE IF NOT EXISTS user (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          email TEXT UNIQUE NOT NULL,
-          phone TEXT,
-          password TEXT NOT NULL
-        )
-      ''');
-
-      // Tambahkan tabel admin jika belum ada
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS admin (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          email TEXT UNIQUE NOT NULL,
-          password TEXT NOT NULL
-        )
+        ALTER TABLE user ADD COLUMN role TEXT DEFAULT 'user';
       ''');
     }
   }
@@ -101,7 +76,8 @@ class DatabaseHelper {
 
   Future<int> insertMenu(Map<String, dynamic> menu) async {
     final db = await database;
-    return await db.insert('menu', menu, conflictAlgorithm: ConflictAlgorithm.replace);
+    return await db.insert(
+        'menu', menu, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Map<String, dynamic>>> getMenuItems() async {
@@ -128,15 +104,20 @@ class DatabaseHelper {
 
   Future<int> insertUser(Map<String, dynamic> user) async {
     final db = await database;
-    return await db.insert('user', user, conflictAlgorithm: ConflictAlgorithm.replace);
+    return await db.insert(
+        'user', user, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Map<String, dynamic>>> getUsers() async {
     final db = await database;
-    return await db.query('user');
+    var result = await db.query('user');
+    return List<Map<String, dynamic>>.from(
+        result); // Make it explicitly mutable
   }
 
-  Future<Map<String, dynamic>?> getUserByEmailAndPassword(String email, String password) async {
+
+  Future<Map<String, dynamic>?> getUserByEmailAndPassword(String email,
+      String password) async {
     final db = await database;
     final result = await db.query(
       'user',
@@ -153,11 +134,27 @@ class DatabaseHelper {
   Future<Map<String, dynamic>?> getUserByEmail(String email) async {
     final db = await database;
     final result = await db.query(
-      'user', // Replace with your actual table name for users
+      'user',
       where: 'email = ?',
       whereArgs: [email],
     );
     return result.isNotEmpty ? result.first : null;
+  }
+
+  // Update user role
+  Future<int> updateUserRole(int id, String role) async {
+    final db = await database;
+    return await db.update(
+      'user',
+      {'role': role},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // Fungsi untuk request menjadi admin (update role menjadi pending)
+  Future<void> requestAdmin(int userId) async {
+    await updateUserRole(userId, 'pending'); // Mengubah role menjadi 'pending'
   }
 
   Future<int> deleteUser(int id) async {
@@ -174,52 +171,41 @@ class DatabaseHelper {
     return null;
   }
 
+  // ========================= User Status Operations =========================
 
-  // ========================= Admin CRUD Operations =========================
-
-  Future<int> insertAdmin(Map<String, dynamic> admin) async {
+  // Fungsi untuk mengubah status user menjadi 'admin'
+  Future<int> promoteUserToAdmin(int userId) async {
     final db = await database;
-    return await db.insert('admin', admin, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  Future<List<Map<String, dynamic>>> getAdmins() async {
-    final db = await database;
-    return await db.query('admin');
-  }
-
-  Future<Map<String, dynamic>?> getAdminByEmailAndPassword(String email, String password) async {
-    final db = await database;
-    final result = await db.query(
-      'admin',
-      where: 'email = ? AND password = ?',
-      whereArgs: [email, password],
+    return await db.update(
+      'user',
+      {'role': 'admin'}, // Mengubah role menjadi admin
+      where: 'id = ?',
+      whereArgs: [userId],
     );
-    if (result.isNotEmpty) {
-      return result.first;
-    }
-    return null;
   }
 
-  // Get admin by email
-  Future<Map<String, dynamic>?> getAdminByEmail(String email) async {
+  // Fungsi untuk mengubah status admin menjadi 'user'
+  Future<int> demoteAdminToUser(int adminId) async {
     final db = await database;
-    final result = await db.query(
-      'admin', // Replace with your actual table name for users
-      where: 'email = ?',
-      whereArgs: [email],
+    return await db.update(
+      'user',
+      {'role': 'user'}, // Mengubah role menjadi user
+      where: 'id = ?',
+      whereArgs: [adminId],
     );
-    return result.isNotEmpty ? result.first : null;
   }
 
-  Future<int> deleteAdmin(int id) async {
+  // Fungsi untuk mengubah status user yang sedang 'pending' menjadi 'user'
+  Future<int> setUserRoleFromPendingToUser(int userId) async {
     final db = await database;
-    return await db.delete('admin', where: 'id = ?', whereArgs: [id]);
+    return await db.update(
+      'user',
+      {'role': 'user'}, // Mengubah role dari pending ke user
+      where: 'id = ? AND role = ?',
+      whereArgs: [
+        userId,
+        'pending'
+      ], // Pastikan hanya mengubah yang role-nya 'pending'
+    );
   }
-
-  Future<void> logTables() async {
-    final db = await database; // Ambil instance database
-    final tables = await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'");
-    print("Tables in database: $tables");
-  }
-
 }

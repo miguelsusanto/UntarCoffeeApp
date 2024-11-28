@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'database_helper.dart';
 import 'shared_prefs_helper_admin.dart'; // SharedPreferences untuk admin
 import 'admin_home_page.dart';
-import 'register_admin_page.dart';
 
 class AdminLoginPage extends StatefulWidget {
   @override
@@ -21,17 +20,25 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     String password = _passwordController.text.trim();
 
     try {
-      // Periksa admin di database
-      final admin = await DatabaseHelper.instance.getAdminByEmailAndPassword(email, password);
+      // Periksa user di database (panggil dari DatabaseHelper)
+      final user = await DatabaseHelper.instance.getUserByEmailAndPassword(email, password);
 
-      if (admin != null) {
-        // Simpan status login admin dan ID admin
-        await _prefsAdmin.saveAdminLoginStatus(true, admin['id']);
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => AdminHomePage()),
-              (route) => false,
-        );
+      if (user != null) {
+        // Cek apakah role user adalah 'admin'
+        if (user['role'] == 'admin') {
+          // Simpan status login admin dan ID admin
+          await _prefsAdmin.saveAdminLoginStatus(true, user['id']);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => AdminHomePage()),
+                (route) => false,
+          );
+        } else {
+          // Jika bukan admin, tampilkan pesan
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("You are not authorized to access this page")),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Invalid email or password")),
@@ -149,36 +156,6 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   ),
                 ),
                 SizedBox(height: 20),
-
-                // Register Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Don't have an account? ",
-                      style: GoogleFonts.questrial(
-                        fontSize: 14,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => RegisterAdminPage()),
-                        );
-                      },
-                      child: Text(
-                        'Register',
-                        style: GoogleFonts.questrial(
-                          fontSize: 14,
-                          color: Color(0xFFAF251C),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),

@@ -10,7 +10,6 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
-  String _paymentMethod = 'Cash'; // Default payment method
 
   @override
   Widget build(BuildContext context) {
@@ -101,34 +100,6 @@ class _PaymentPageState extends State<PaymentPage> {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-            child: Text('Choose Payment Method:',
-              style: GoogleFonts.questrial(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _customElevatedButton('Cash', () {
-                setState(() {
-                  _paymentMethod = 'Cash';
-                });
-              }, _paymentMethod == 'Cash'),
-              _customElevatedButton('Gopay', () {
-                setState(() {
-                  _paymentMethod = 'Gopay';
-                });
-              }, _paymentMethod == 'Gopay'),
-              _customElevatedButton('OVO', () {
-                setState(() {
-                  _paymentMethod = 'OVO';
-                });
-              }, _paymentMethod == 'OVO'),
-            ],
-          ),
           SizedBox(height: 4.0),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -214,27 +185,6 @@ class _PaymentPageState extends State<PaymentPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _customElevatedButton(String label, VoidCallback onPressed, bool isSelected) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? Color(0xFFAF251C) : Colors.white,
-        elevation: 0,
-        padding: EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Color(0xFFAF251C),
-          fontSize: 18,
-        ),
       ),
     );
   }

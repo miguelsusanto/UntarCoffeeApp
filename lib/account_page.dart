@@ -70,6 +70,23 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
+  Future<void> _requestAdmin() async {
+    if (user != null) {
+      try {
+        // Send request to become an admin in the database
+        await DatabaseHelper.instance.requestAdmin(user!['id']);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Request to become admin sent')),
+        );
+      } catch (e) {
+        print('Error requesting admin: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send request')),
+        );
+      }
+    }
+  }
+
   void _navigateToSplashScreen() {
     Navigator.pushAndRemoveUntil(
       context,
@@ -122,8 +139,8 @@ class _AccountPageState extends State<AccountPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFFAF251C),
                       padding: EdgeInsets.symmetric(
-                        vertical: size.height * 0.015,
-                        horizontal: size.width * 0.185,
+                        vertical: 12,
+                        horizontal: 30,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -145,8 +162,8 @@ class _AccountPageState extends State<AccountPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[400],
                       padding: EdgeInsets.symmetric(
-                        vertical: size.height * 0.015,
-                        horizontal: size.width * 0.155,
+                        vertical: 12,
+                        horizontal: 30,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -212,8 +229,7 @@ class _AccountPageState extends State<AccountPage> {
           children: [
             CircleAvatar(
               radius: size.width * 0.15,
-              backgroundImage:
-              AssetImage('assets/profilepicture.jpg'),
+              backgroundImage: AssetImage('assets/profilepicture.jpg'),
             ),
             SizedBox(height: size.height * 0.03),
             Text(
@@ -249,7 +265,7 @@ class _AccountPageState extends State<AccountPage> {
                     backgroundColor: Color(0xFFAF251C),
                     padding: EdgeInsets.symmetric(
                       vertical: 12,
-                      horizontal: size.width * 0.3,
+                      horizontal: size.width * 0.09,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -257,6 +273,28 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                   child: Text(
                     "Log Out",
+                    style: GoogleFonts.questrial(
+                      fontSize: size.width * 0.045,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(width: size.width * 0.02),
+                ElevatedButton(
+                  onPressed: _requestAdmin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF2E8B57), // Green color for request
+                    padding: EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: size.width * 0.04,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    "Request Admin",
                     style: GoogleFonts.questrial(
                       fontSize: size.width * 0.045,
                       color: Colors.white,

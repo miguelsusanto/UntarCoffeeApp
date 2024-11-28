@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:untarfoodapp/insert_menu_page.dart';
-import 'account_page.dart';
 import 'view_menu_database_page.dart'; // Halaman untuk melihat database menu
-import 'view_admin_account_page.dart'; // Halaman untuk melihat akun admin
 import 'splash_screen.dart'; // Halaman splash screen
 import 'view_user_account_page.dart';
 import 'shared_prefs_helper_admin.dart';
@@ -48,13 +46,6 @@ class _AdminHomePageState extends State<AdminHomePage> {
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => ViewMenuDatabasePage()),
-    );
-  }
-
-  Future<void> navigateToViewAdminAccountPage() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ViewAdminAccountPage()),
     );
   }
 
@@ -234,37 +225,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
               ),
             ),
             SizedBox(height: size.height * 0.02),
-            // Tombol 2: View Admin Account
-            ElevatedButton(
-              onPressed: navigateToViewAdminAccountPage,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFAF251C),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24.0),
-                ),
-                padding: EdgeInsets.symmetric(
-                  vertical: size.height * 0.02,
-                  horizontal: size.width * 0.06,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.admin_panel_settings, color: Colors.white),
-                  SizedBox(width: size.width * 0.03),
-                  Text(
-                    'View Admin Accounts',
-                    style: GoogleFonts.questrial(
-                      fontSize: size.width * 0.045,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: size.height * 0.02),
-            // Tombol 3: View User Account
+            // Tombol 2: View Accounts
             ElevatedButton(
               onPressed: navigateToViewUserAccountPage,
               style: ElevatedButton.styleFrom(
@@ -283,7 +244,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   Icon(Icons.admin_panel_settings, color: Colors.white),
                   SizedBox(width: size.width * 0.03),
                   Text(
-                    'View User Accounts',
+                    'View Accounts',
                     style: GoogleFonts.questrial(
                       fontSize: size.width * 0.045,
                       color: Colors.white,

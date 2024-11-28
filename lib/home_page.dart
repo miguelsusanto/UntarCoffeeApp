@@ -7,6 +7,8 @@ import 'account_page.dart';
 import 'database_helper.dart';
 import 'menu_data.dart';
 import 'menu_detail_page.dart';
+import 'splash_screen.dart';
+import 'shared_prefs_helper_user.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -19,6 +21,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   List<MenuItem> filteredMenuItems = [];
   bool isLoading = true;
   double? distanceToCampus; // Variabel untuk menyimpan jarak
+  final SharedPrefsHelperUser _prefsHelper = SharedPrefsHelperUser();
 
   @override
   void initState() {
@@ -120,9 +123,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
 
       // Konversi ke kilometer
+      double distanceInKm = distanceInMeters / 1000;
+
       setState(() {
-        distanceToCampus = distanceInMeters / 1000; // dalam kilometer
+        distanceToCampus = distanceInKm; // dalam kilometer
       });
+
+      // Periksa apakah jarak lebih dari 100 km
+      if (distanceInKm > 100) {
+        showDistanceAlert(distanceInKm);
+      }
     } catch (e) {
       print('Error getting location: $e');
       setState(() {
@@ -130,6 +140,53 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       });
     }
   }
+
+  void showDistanceAlert(double distance) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Jarak Terlalu Jauh"),
+          content: Text(
+            "Jarak Anda ke UNTAR Coffee adalah ${distance.toStringAsFixed(2)} km.\n"
+                "Apakah Anda ingin melanjutkan memesan?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _logout();
+              },
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Tutup pop-up
+              },
+              child: Text("Yes"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _logout() async {
+    // Remove login status and logged-in user ID from SharedPreferences
+    await _prefsHelper.clearUserLoginData();
+
+    if (mounted) {
+      _navigateToSplashScreen();
+    }
+  }
+
+  void _navigateToSplashScreen() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => SplashScreen()),
+          (route) => false,
+    );
+  }
+
 
 
   void filterMenuItems() {
